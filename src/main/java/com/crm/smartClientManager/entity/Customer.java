@@ -29,6 +29,9 @@ public class Customer {
     @Column(nullable = false, unique = true)
     private String nic;
 
+    private Date createdDate;
+    private Date updatedDate;
+
     @ElementCollection
     private List<String> mobileNumber;
 
