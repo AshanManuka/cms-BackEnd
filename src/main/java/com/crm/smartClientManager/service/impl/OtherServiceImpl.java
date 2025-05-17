@@ -1,7 +1,9 @@
 package com.crm.smartClientManager.service.impl;
 
 import com.crm.smartClientManager.dto.CommonResponse;
+import com.crm.smartClientManager.dto.city.CityResDto;
 import com.crm.smartClientManager.dto.country.CountryResDto;
+import com.crm.smartClientManager.entity.City;
 import com.crm.smartClientManager.entity.Country;
 import com.crm.smartClientManager.repository.CityRepository;
 import com.crm.smartClientManager.repository.CountryRepository;
@@ -28,6 +30,17 @@ public class OtherServiceImpl implements OtherService {
 
         List<CountryResDto> resList = countryList.stream()
                 .map(country -> new CountryResDto(country.getId(), country.getName()))
+                .toList();
+
+        return ResponseEntity.ok(new CommonResponse<>(true, resList));
+    }
+
+    @Override
+    public ResponseEntity<?> getCitiesByCountry(Long countryId) {
+        List<City> cityList = cityRepository.getCitiesByCountry(countryId);
+
+        List<CityResDto> resList = cityList.stream()
+                .map(city -> new CityResDto(city.getId(), city.getName()))
                 .toList();
 
         return ResponseEntity.ok(new CommonResponse<>(true, resList));
