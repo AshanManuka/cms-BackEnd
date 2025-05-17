@@ -30,10 +30,22 @@ public class CustomerController {
     }
 
 
-    @PostMapping("/register-customer")
+    @PostMapping("/register")
     public ResponseEntity<?> registerCustomer(@RequestBody CustomerReqDto reqDto){
         log.info("Requst for save new Customer, customerNic:{}", reqDto.getNic());
         return customerService.registerCustomer(reqDto);
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<?> searchCustomer(@RequestParam String keyword){
+        log.info("Request for search customer by keyword : {}",keyword);
+        return customerService.searchCustomerByKeyword(keyword);
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<?> getAllCustomer(){
+        log.info("Request for get all customera");
+        return customerService.getAllCustomers();
     }
 
 

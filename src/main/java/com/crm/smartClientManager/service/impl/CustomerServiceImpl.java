@@ -2,6 +2,10 @@ package com.crm.smartClientManager.service.impl;
 
 import com.crm.smartClientManager.dto.CommonResponse;
 import com.crm.smartClientManager.dto.address.AddressReqDto;
+import com.crm.smartClientManager.dto.address.AddressResDto;
+import com.crm.smartClientManager.dto.city.CityResDto;
+import com.crm.smartClientManager.dto.customer.CustomerBasicResDto;
+import com.crm.smartClientManager.dto.customer.CustomerFullResDto;
 import com.crm.smartClientManager.dto.customer.CustomerReqDto;
 import com.crm.smartClientManager.entity.Address;
 import com.crm.smartClientManager.entity.City;
@@ -17,6 +21,7 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -68,6 +73,7 @@ public class CustomerServiceImpl implements CustomerService {
                         .lineTwo(addDto.getLineTwo())
                         .city(city.get())
                         .country(city.get().getCountry())
+                        .customer(regCustomer)
                         .build();
 
                 addresses.add(address);
@@ -84,6 +90,57 @@ public class CustomerServiceImpl implements CustomerService {
         customerRepository.save(regCustomer);
 
         return ResponseEntity.ok(new CommonResponse<>(true, "Custmer Saved Successfully..!"));
+
+    }
+
+    @Override
+    public ResponseEntity<?> searchCustomerByKeyword(String keyword) {
+        List<Customer> customerList = customerRepository.searchByKeyword(keyword);
+
+        List<CustomerBasicResDto> resList = customerList.stream()
+                .map(customer -> new CustomerBasicResDto(customer.getId(), customer.getName(), customer.getNic(), customer.getDob()))
+                .toList();
+
+        return ResponseEntity.ok(new CommonResponse<>(true, resList));
+    }
+
+    @Override
+    public ResponseEntity<?> getAllCustomers() {
+        List<Customer> customerList = customerRepository.findAll();
+
+        List<CustomerFullResDto> responseList = customerList.stream().map(customer -> {
+            List<CustomerBasicResDto> memberList = customer.getFamilyMembers().stream()
+                    .map(member -> new CustomerBasicResDto(
+                            member.getId(),
+                            member.getName(),
+                            member.getNic(),
+                            member.getDob()))
+                    .toList();
+
+            List<AddressResDto> addressList = customer.getAddresses().stream()
+                    .map(address -> new AddressResDto(
+                            address.getId(),
+                            address.getLineOne(),
+                            address.getLineTwo(),
+                            address.getCity().getName(),
+                            address.getCountry().getName()))
+                    .toList();
+
+            System.out.println(addressList);
+
+            List<String> mobileNumbers = customer.getMobileNumber();
+
+            return new CustomerFullResDto(
+                    customer.getName(),
+                    customer.getDob(),
+                    customer.getNic(),
+                    mobileNumbers,
+                    memberList,
+                    addressList
+            );
+        }).toList();
+
+        return ResponseEntity.ok(new CommonResponse<>(true, responseList));
 
     }
 

@@ -28,6 +28,6 @@ public class Address {
     private Country country;
 
     @ManyToOne
-    @JoinColumn(name = "customerId")
+    @JoinColumn(name = "customer_id")
     private Customer customer;
 }
