@@ -1,6 +1,7 @@
 package com.crm.smartClientManager.controller;
 
 import com.crm.smartClientManager.dto.customer.CustomerReqDto;
+import com.crm.smartClientManager.dto.customer.CustomerUpdateReqDto;
 import com.crm.smartClientManager.service.CustomerService;
 import com.crm.smartClientManager.service.OtherService;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +47,12 @@ public class CustomerController {
     public ResponseEntity<?> getAllCustomer(){
         log.info("Request for get all customera");
         return customerService.getAllCustomers();
+    }
+
+    @PutMapping("/update")
+    public ResponseEntity<?> updateCustomer(@RequestBody CustomerUpdateReqDto reqDto){
+        log.info("Request for update customer, customerId: {}",reqDto.getId());
+        return customerService.updateCustomer(reqDto);
     }
 
 

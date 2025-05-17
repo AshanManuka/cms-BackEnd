@@ -3,10 +3,12 @@ package com.crm.smartClientManager.service.impl;
 import com.crm.smartClientManager.dto.CommonResponse;
 import com.crm.smartClientManager.dto.address.AddressReqDto;
 import com.crm.smartClientManager.dto.address.AddressResDto;
+import com.crm.smartClientManager.dto.address.AddressUpdateReqDto;
 import com.crm.smartClientManager.dto.city.CityResDto;
 import com.crm.smartClientManager.dto.customer.CustomerBasicResDto;
 import com.crm.smartClientManager.dto.customer.CustomerFullResDto;
 import com.crm.smartClientManager.dto.customer.CustomerReqDto;
+import com.crm.smartClientManager.dto.customer.CustomerUpdateReqDto;
 import com.crm.smartClientManager.entity.Address;
 import com.crm.smartClientManager.entity.City;
 import com.crm.smartClientManager.entity.Country;
@@ -23,15 +25,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.sql.SQLOutput;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Log4j2
-@Transactional
 public class CustomerServiceImpl implements CustomerService {
 
     private final CustomerRepository customerRepository;
@@ -154,6 +153,102 @@ public class CustomerServiceImpl implements CustomerService {
         }).toList();
 
         return ResponseEntity.ok(new CommonResponse<>(true, responseList));
+
+    }
+
+    @Transactional
+    @Override
+    public ResponseEntity<?> updateCustomer(CustomerUpdateReqDto reqDto) {
+
+        List<Customer> existsMemberList = new ArrayList<>();
+
+        Customer checkCustomer = customerRepository.findByNic(reqDto.getNic());
+//        if (checkCustomer != null && !checkCustomer.getId().equals(reqDto.getId())){
+        if (checkCustomer != null && checkCustomer.getId() != reqDto.getId()){
+            log.info("New NIC already exists");
+            return ResponseEntity.ok(new CommonResponse<>(false, "New Nic already Exists..!"));
+        }
+
+        Optional<Customer> customer = customerRepository.findById(reqDto.getId());
+        if(customer.isEmpty()){
+            return ResponseEntity.ok(new CommonResponse<>(false, "Customer Not found..!"));
+        }
+
+        Customer existsCustomer = customer.get();
+        existsCustomer.setName(reqDto.getName());
+        existsCustomer.setDob(reqDto.getDob());
+        existsCustomer.setNic(reqDto.getNic());
+        existsCustomer.setMobileNumber(reqDto.getMobileNumber());
+        existsCustomer.setUpdatedDate(new Date());
+
+        if (reqDto.getMemberList() != null) {
+            existsMemberList = existsCustomer.getFamilyMembers();
+            List<Customer> members = customerRepository.findAllById(reqDto.getMemberList());
+            existsCustomer.setFamilyMembers(members);
+
+            Set<Long> oldIds = existsMemberList.stream()
+                    .map(Customer::getId)
+                    .collect(Collectors.toSet());
+
+            Set<Long> newIds = members.stream()
+                    .map(Customer::getId)
+                    .collect(Collectors.toSet());
+
+            Set<Long> removedIds = new HashSet<>(oldIds);
+            removedIds.removeAll(newIds);
+
+            Set<Long> addedIds = new HashSet<>(newIds);
+            addedIds.removeAll(oldIds);
+
+            List<Customer> removedMembers = existsMemberList.stream()
+                    .filter(c -> removedIds.contains(c.getId()))
+                    .collect(Collectors.toList());
+
+            List<Customer> addedMembers = members.stream()
+                    .filter(c -> addedIds.contains(c.getId()))
+                    .collect(Collectors.toList());
+
+            for(Customer removedCustomer : removedMembers){
+                List<Customer> ownMember = removedCustomer.getFamilyMembers();
+                ownMember.remove(existsCustomer);
+                customerRepository.save(removedCustomer);
+            }
+
+            for(Customer addedCustomer : addedMembers){
+                addedCustomer.getFamilyMembers().add(existsCustomer);
+                customerRepository.save(addedCustomer);
+            }
+        }
+
+        if (reqDto.getAddressList() != null) {
+            List<Address> addressList = existsCustomer.getAddresses();
+
+            for (Address address : addressList) {
+                for (AddressUpdateReqDto updateDto : reqDto.getAddressList()) {
+                    //if (address.getId().equals(updateDto.getId())) {
+                    if (address.getId() == updateDto.getId()) {
+
+                        Optional<City> city = cityRepository.findById(updateDto.getCityId());
+                        if (city.isEmpty()) {
+                            return ResponseEntity.ok(new CommonResponse<>(false, "City not found for address ID: " + updateDto.getId()));
+                        }
+
+                        address.setLineOne(updateDto.getLineOne());
+                        address.setLineTwo(updateDto.getLineTwo());
+                        address.setCity(city.get());
+                        address.setCountry(city.get().getCountry());
+                        addressRepository.save(address); // optional if inside @Transactional
+                        break;
+                    }
+                }
+            }
+        }
+
+
+
+
+        customerRepository.save(existsCustomer);
+        return ResponseEntity.ok(new CommonResponse<>(true, "Customer updated successfully."));
 
     }
 
