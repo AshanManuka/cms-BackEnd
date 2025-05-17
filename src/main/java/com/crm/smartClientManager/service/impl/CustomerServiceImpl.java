@@ -16,6 +16,7 @@ import com.crm.smartClientManager.repository.CityRepository;
 import com.crm.smartClientManager.repository.CountryRepository;
 import com.crm.smartClientManager.repository.CustomerRepository;
 import com.crm.smartClientManager.service.CustomerService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +31,7 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 @Log4j2
+@Transactional
 public class CustomerServiceImpl implements CustomerService {
 
     private final CustomerRepository customerRepository;
@@ -41,6 +43,7 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     public ResponseEntity<?> registerCustomer(CustomerReqDto reqDto) {
 
+        List<Customer> familyMembers = new ArrayList<>();
         Customer customer = customerRepository.findByNic(reqDto.getNic());
         if (customer != null) {
             log.info("Customer already exists");
@@ -83,11 +86,21 @@ public class CustomerServiceImpl implements CustomerService {
         }
 
         if (reqDto.getMemberList() != null && !reqDto.getMemberList().isEmpty()) {
-            List<Customer> familyMembers = customerRepository.findAllById(reqDto.getMemberList());
+            familyMembers = customerRepository.findAllById(reqDto.getMemberList());
             regCustomer.setFamilyMembers(familyMembers);
         }
 
-        customerRepository.save(regCustomer);
+        Customer savedCustomer = customerRepository.save(regCustomer);
+
+        for (Customer member : familyMembers) {
+            List<Customer> tmpList = member.getFamilyMembers();
+            if (tmpList == null) {
+                tmpList = new ArrayList<>();
+            }
+            tmpList.add(savedCustomer);
+            member.setFamilyMembers(tmpList);
+            customerRepository.save(member);
+        }
 
         return ResponseEntity.ok(new CommonResponse<>(true, "Custmer Saved Successfully..!"));
 
