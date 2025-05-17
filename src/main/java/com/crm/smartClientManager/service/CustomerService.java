@@ -12,4 +12,6 @@ public interface CustomerService {
     ResponseEntity<?> getAllCustomers();
 
     ResponseEntity<?> updateCustomer(CustomerUpdateReqDto reqDto);
+
+    ResponseEntity<?> getSingleCustomer(Long customerId);
 }

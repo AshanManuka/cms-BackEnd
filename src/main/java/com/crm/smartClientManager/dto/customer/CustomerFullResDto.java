@@ -13,6 +13,7 @@ import java.util.List;
 @Setter
 @ToString
 public class CustomerFullResDto {
+    private Long id;
     private String name;
     private Date dob;
     private String nic;

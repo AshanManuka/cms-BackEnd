@@ -143,6 +143,7 @@ public class CustomerServiceImpl implements CustomerService {
             List<String> mobileNumbers = customer.getMobileNumber();
 
             return new CustomerFullResDto(
+                    customer.getId(),
                     customer.getName(),
                     customer.getDob(),
                     customer.getNic(),
@@ -237,7 +238,7 @@ public class CustomerServiceImpl implements CustomerService {
                         address.setLineTwo(updateDto.getLineTwo());
                         address.setCity(city.get());
                         address.setCountry(city.get().getCountry());
-                        addressRepository.save(address); // optional if inside @Transactional
+                        addressRepository.save(address);
                         break;
                     }
                 }
@@ -250,6 +251,47 @@ public class CustomerServiceImpl implements CustomerService {
         customerRepository.save(existsCustomer);
         return ResponseEntity.ok(new CommonResponse<>(true, "Customer updated successfully."));
 
+    }
+
+    @Override
+    public ResponseEntity<?> getSingleCustomer(Long customerId) {
+        Optional<Customer> customer = customerRepository.findById(customerId);
+
+        if (customer.isEmpty()){
+            return ResponseEntity.ok(new CommonResponse<>(false, "Customer not found"));
+        }
+
+        Customer selectedCustomer = customer.get();
+        CustomerFullResDto resCustomer = new CustomerFullResDto();
+        resCustomer.setId(selectedCustomer.getId());
+        resCustomer.setName(selectedCustomer.getName());
+        resCustomer.setNic(selectedCustomer.getNic());
+        resCustomer.setDob(selectedCustomer.getDob());
+
+            List<CustomerBasicResDto> memberList = selectedCustomer.getFamilyMembers().stream()
+                    .map(member -> new CustomerBasicResDto(
+                            member.getId(),
+                            member.getName(),
+                            member.getNic(),
+                            member.getDob()))
+                    .toList();
+            resCustomer.setMemberList(memberList);
+
+            List<AddressResDto> addressList = selectedCustomer.getAddresses().stream()
+                    .map(address -> new AddressResDto(
+                            address.getId(),
+                            address.getLineOne(),
+                            address.getLineTwo(),
+                            address.getCity().getName(),
+                            address.getCountry().getName()))
+                    .toList();
+            resCustomer.setAddressList(addressList);
+
+            List<String> mobileNumbers = selectedCustomer.getMobileNumber();
+            resCustomer.setMobileNumber(mobileNumbers);
+
+
+        return ResponseEntity.ok(new CommonResponse<>(true, resCustomer));
     }
 
 }

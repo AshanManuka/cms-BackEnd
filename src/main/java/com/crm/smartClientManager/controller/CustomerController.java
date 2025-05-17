@@ -9,6 +9,7 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+@CrossOrigin(origins = "http://localhost:3000")
 @RestController
 @RequiredArgsConstructor
 @Log4j2
@@ -47,6 +48,12 @@ public class CustomerController {
     public ResponseEntity<?> getAllCustomer(){
         log.info("Request for get all customera");
         return customerService.getAllCustomers();
+    }
+
+    @GetMapping("/single")
+    public ResponseEntity<?> getSingleCustomer(@RequestParam Long customerId){
+        log.info("Request for get single customer, customerId:{}",customerId);
+        return customerService.getSingleCustomer(customerId);
     }
 
     @PutMapping("/update")
